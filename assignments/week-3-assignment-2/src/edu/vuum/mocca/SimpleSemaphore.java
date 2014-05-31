@@ -18,22 +18,28 @@ public class SimpleSemaphore {
      * Define a Lock to protect the critical section.
      */
     // TODO - you fill in here
+	ReentrantLock lock;
 
     /**
      * Define a Condition that waits while the number of permits is 0.
      */
     // TODO - you fill in here
+	Condition condition;
 
     /**
      * Define a count of the number of available permits.
      */
     // TODO - you fill in here.  Make sure that this data member will
     // ensure its values aren't cached by multiple Threads..
+	volatile SimpleAtomicLong permitsNo;
 
     public SimpleSemaphore(int permits, boolean fair) {
         // TODO - you fill in here to initialize the SimpleSemaphore,
         // making sure to allow both fair and non-fair Semaphore
         // semantics.
+    	lock = new ReentrantLock(fair);
+    	condition = lock.newCondition();
+    	permitsNo = new SimpleAtomicLong(permits);
     }
 
     /**
@@ -42,6 +48,12 @@ public class SimpleSemaphore {
      */
     public void acquire() throws InterruptedException {
         // TODO - you fill in here.
+    	lock.lockInterruptibly();
+    	while (permitsNo.get() == 0) {
+    		condition.await();
+    	}
+    	permitsNo.decrementAndGet();
+    	lock.unlock();
     }
 
     /**
@@ -50,6 +62,12 @@ public class SimpleSemaphore {
      */
     public void acquireUninterruptibly() {
         // TODO - you fill in here.
+    	lock.lock();
+    	while (permitsNo.get() == 0) {
+    		condition.awaitUninterruptibly();
+    	}
+    	permitsNo.decrementAndGet();
+    	lock.unlock();
     }
 
     /**
@@ -57,6 +75,10 @@ public class SimpleSemaphore {
      */
     public void release() {
         // TODO - you fill in here.
+    	lock.lock();
+    	permitsNo.incrementAndGet();
+    	condition.signal();
+    	lock.unlock();
     }
 
     /**
@@ -65,6 +87,10 @@ public class SimpleSemaphore {
     public int availablePermits() {
         // TODO - you fill in here by changing null to the appropriate
         // return value.
-        return null;
+    	int permitNum = 0;
+    	lock.lock();
+    	permitNum = (int) permitsNo.get();
+    	lock.unlock();
+        return permitNum;
     }
 }
